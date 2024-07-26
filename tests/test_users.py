@@ -25,8 +25,8 @@ def test_creat_user_username_already_exists(client, user):
     response = client.post(
         '/users',
         json={
-            'username': 'Teste',
-            'email': 'teste@test.com',
+            'username': user.username,
+            'email': 'new@test.com',
             'password': 'testtest',
         },
     )
@@ -39,7 +39,7 @@ def test_creat_user_email_already_exists(client, user):
         '/users',
         json={
             'username': 'John Doe',
-            'email': 'teste@test.com',
+            'email': user.email,
             'password': 'testtest',
         },
     )
@@ -77,9 +77,9 @@ def test_update_user(client, user, token):
     }
 
 
-def test_update_user_other_user(client, users, token):
+def test_update_user_other_user(client, other_user, token):
     response = client.put(
-        '/users/3',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
         json={
             'username': 'Bob',
@@ -87,17 +87,18 @@ def test_update_user_other_user(client, users, token):
             'password': 'newpassword',
         },
     )
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not enough permissions'}
 
 
 def test_read_user(client, user):
-    response = client.get('/users/1')
+    response = client.get(f'/users/{user.id}')
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {
-        'username': 'Teste',
-        'email': 'teste@test.com',
-        'id': 1,
+        'username': user.username,
+        'email': user.email,
+        'id': user.id,
     }
 
 
@@ -117,10 +118,11 @@ def test_delet_user(client, user, token):
     assert response.json() == {'message': 'User deleted'}
 
 
-def test_delet_user_other_user(client, users, token):
+def test_delet_user_other_user(client, other_user, token):
     response = client.delete(
-        '/users/3',
+        f'/users/{other_user.id}',
         headers={'Authorization': f'Bearer {token}'},
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not enough permissions'}

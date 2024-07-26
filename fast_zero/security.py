@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, decode, encode
+from jwt import DecodeError, ExpiredSignatureError, decode, encode
 from pwdlib import PasswordHash
 from sqlalchemy import Select
 from sqlalchemy.orm import Session
@@ -61,12 +61,14 @@ async def get_current_user(
         token_data = TokenData(username=username)
     except DecodeError:
         raise credentials_exception
+    except ExpiredSignatureError:
+        raise credentials_exception
 
     user = session.scalar(
         Select(User).where(User.email == token_data.username)
     )
 
-    if user is None:
+    if not user:
         raise credentials_exception
 
     return user
